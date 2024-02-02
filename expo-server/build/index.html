@@ -1,12 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beat Detector Example</title>
 </head>
 <body>
-    <h1>Hello World (from html)</h1>
+  <!-- Your HTML content goes here -->
+    <br />
+    <br />
+    <br />
+  <button id="playButton">Play</button>
+
+  <script type="module">
+    import BeatBeat from "./beat-beat.js";
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const playButton = document.getElementById('playButton');
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      let sound;
+
+      playButton.addEventListener('click', async () => {
+  if (!sound) {
+    sound = new BeatBeat(audioContext, "./sample.mp3");
+    await sound.load();
+
+    // Check and resume the AudioContext if needed
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+
+    sound.play(() => console.log("This callback will execute at every beat of the song"));
+  } else {
+    // If sound is already initialized, simply play it again
+    sound.play();
+  }
+});
+    });
+  </script>
 </body>
-<script src="./index.js"></script>
 </html>

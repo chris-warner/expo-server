@@ -36,21 +36,54 @@ export default function App() {
     );
   }
 
+  const debugging = `
+    const consoleLog = (type, log) => window.ReactNativeWebView.postMessage(JSON.stringify({'type': 'Console', 'data': {'type': type, 'log': log}}));
+    console = {
+        log: (log) => consoleLog('log', log),
+        debug: (log) => consoleLog('debug', log),
+        info: (log) => consoleLog('info', log),
+        warn: (log) => consoleLog('warn', log),
+        error: (log) => consoleLog('error', log),
+    };
+  `;
+
+  const jsCode = "setTimeout(function() {document.getElementById('js-pjax-loader-bar');}, 2000)";
+
+
+  const onMessage = (event) => {
+    let dataPayload;
+    try {
+      dataPayload = JSON.parse(event.nativeEvent.data);
+    } catch (e) {}
+    if (dataPayload) {
+      if (dataPayload.type === 'Console') {
+        console.info(`[Console] ${JSON.stringify(dataPayload.data)}`);
+      } else {
+        console.log(dataPayload);
+      }
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
       <StatusBar style="auto" />
-      <WebView source={{ uri: serverUrl }} />
+      <WebView source={{ uri: serverUrl }}
+              setAllowFileAccessFromFileURLs={true}
+              setAllowUniversalAccessFromFileURLs={true}
+              scalesPageToFit={true}
+              javaScriptEnabled={true}  
+              originWhitelist={['*']}
+              onMessage={onMessage}
+              injectedJavaScriptBeforeContentLoaded={debugging + jsCode} // Inject JavaScript content
+               />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginTop:100,
+    padding: 0,
+    margin: 0,
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
