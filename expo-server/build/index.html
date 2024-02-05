@@ -1,47 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Beat Detector Example</title>
-  </head>
-  <body>
-    <!-- Your HTML content goes here -->
-    <br />
-    <br />
-    <br />
-    <button id="playButton">Play</button>
 
-    <script type="module">
-      import BeatBeat from "./beat-beat.js";
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Beat Detector Example</title>
+</head>
 
-      document.addEventListener("DOMContentLoaded", () => {
-        const playButton = document.getElementById("playButton");
-        const audioContext = new (window.AudioContext ||
-          window.webkitAudioContext)();
-        let sound;
+<body>
+  <!-- Your HTML content goes here -->
+  <br />
+  <br />
+  <br />
+  <button id="playButton">Play</button>
 
-        playButton.addEventListener("click", async () => {
-          if (!sound) {
-            sound = new BeatBeat(audioContext, "./sample.mp3");
-            await sound.load();
+  <script type="module">
+    import BeatBeat from "./beat-beat.js";
+    window.analyzeAudio = analyzeAudio;
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    let sound;
+    let beatTimestamps = [];
 
-            // Check and resume the AudioContext if needed
-            if (audioContext.state === "suspended") {
-              await audioContext.resume();
-            }
+    async function analyzeAudio() {
+      if (!sound) {
+        sound = new BeatBeat(audioContext, "./sample.mp3");
+        await sound.load();
 
-            sound.play(() =>
-              console.log(
-                "This callback will execute at every beat of the song"
-              )
-            );
-          } else {
-            // If sound is already initialized, simply play it again
-            sound.play();
-          }
+        // Check and resume the AudioContext if needed
+        if (audioContext.state === "suspended") {
+          await audioContext.resume();
+        }
+
+        sound.play(() => {
+          const now = audioContext.currentTime;
+          beatTimestamps.push(now);
+          // console.log("Beat detected. Timestamp: " + now);
         });
-      });
-    </script>
-  </body>
+      } else {
+        // If sound is already initialized, simply play it again
+        sound.play();
+      }
+    }
+
+    function calculateBPM() {
+  // Calculate BPM based on the time intervals between beats
+  const now = audioContext.currentTime;
+  const recentBeats = beatTimestamps.filter(timestamp => now - timestamp <= 5);
+  const beatCount = recentBeats.length;
+
+  if (beatCount >= 2) {
+    const totalTime = recentBeats[beatCount - 1] - recentBeats[0];
+    const averageInterval = totalTime / (beatCount - 1);
+    const bpm = 60 / averageInterval;
+
+    // Round BPM to a three-digit integer
+    const roundedBPM = Math.round(bpm);
+
+    // console.log(`BPM calculated over the last 5 seconds: ${roundedBPM}`);
+    window.postMessage(roundedBPM);
+  }
+}
+    document.addEventListener("DOMContentLoaded", () => {
+  // Start analyzing audio when the DOM is loaded
+  analyzeAudio();
+
+  // Set a delay before starting the BPM calculation interval
+  setTimeout(() => {
+    // Set a timer to calculate BPM every 5 seconds
+    setInterval(calculateBPM, 5000);
+  }, 1000); // Adjust the delay time as needed
+});
+
+  </script>
+</body>
+
 </html>

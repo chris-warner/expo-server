@@ -11,17 +11,24 @@
   "dependencies": {
     "@dr.pogodin/react-native-static-server": "^0.6.0-alpha.8",
     "@expo/metro-runtime": "~3.1.1",
+    "@gluestack-style/react": "^1.0.45",
+    "@gluestack-ui/config": "^1.1.2",
+    "@gluestack-ui/themed": "^1.1.3",
     "expo": "~50.0.5",
+    "expo-av": "~13.10.4",
     "expo-status-bar": "~1.11.1",
+    "nativewind": "^2.0.11",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.73.2",
     "react-native-fs": "^2.20.0",
+    "react-native-svg": "^13.4.0",
     "react-native-web": "~0.19.6",
     "react-native-webview": "^13.7.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@babel/core": "^7.20.0",
+    "tailwindcss": "^3.3.2"
   },
   "private": true
 }
