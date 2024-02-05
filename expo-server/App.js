@@ -124,8 +124,11 @@ export default function App() {
     <View style={styles.container}>
       <StatusBar style="auto" />
       <View style={styles.innerContainer}>
+
         <Text style={{ color: 'black', fontSize: 18 }}>Calculate BPM: {bpm}</Text>
-        <Button title={isPlaying ? 'Pause' : 'Play'} onPress={() => playFunctionInWebView()} />
+        {/* <Button title={isPlaying ? 'Pause' : 'Play'} onPress={() => playFunctionInWebView()} /> */}
+        <Text className="text-center text-lg ">BPM is updated every 5 seconds, can be changed in index.html</Text>
+
       </View>
       <WebView
         className="hidden"
