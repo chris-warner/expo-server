@@ -1,0 +1,10 @@
+export declare const realtimeBpmProcessorName = "realtime-bpm-processor";
+export declare const startThreshold = 0.95;
+export declare const minValidThreshold = 0.2;
+export declare const minPeaks = 15;
+export declare const thresholdStep = 0.05;
+export declare const skipForwardIndexes = 10000;
+export declare const offlineLowPassFrequencyValue = 150;
+export declare const offlineLowPassQualityValue = 1;
+export declare const offlineHighPassFrequencyValue = 100;
+export declare const offlineHighPassQualityValue = 1;

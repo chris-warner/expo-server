@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, Button } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import StaticServer from '@dr.pogodin/react-native-static-server';
 import RNFS from 'react-native-fs';
 import { WebView } from 'react-native-webview';
@@ -8,10 +8,8 @@ import { Audio } from 'expo-av';
 
 export default function App() {
   const [serverUrl, setServerUrl] = useState("");
-  const [permissionResponse, requestPermission] = Audio.usePermissions();
-  const [isPlaying, setIsPlaying] = useState(false);
   const [bpm, setBPM] = useState(0);
-
+  const [stableBPM, setStableBPM] = useState(0);
   const webViewRef = useRef(null);
 
   useEffect(() => {
@@ -43,101 +41,59 @@ export default function App() {
 
   async function getPermissions() {
     try {
-      if (permissionResponse.status !== 'granted') {
-        console.log('Requesting permission..');
-        await requestPermission();
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Permission to record audio was denied');
+        return;
       }
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
       });
-    } catch {
-      console.log('Failed to get microphone permissions');
+    } catch (error) {
+      console.log('Failed to get microphone permissions:', error);
     }
   }
 
-  const debugging = `
-    const consoleLog = (type, log) => window.ReactNativeWebView.postMessage(JSON.stringify({'type': 'Console', 'data': {'type': type, 'log': log}}));
-    console = {
-        log: (log) => consoleLog('log', log),
-        debug: (log) => consoleLog('debug', log),
-        info: (log) => consoleLog('info', log),
-        warn: (log) => consoleLog('warn', log),
-        error: (log) => consoleLog('error', log),
-    };
-  `;
-
-  const jsCode = `
-  window.postMessage = function(data) {
-    if (typeof data === 'number') {
-      console.log('Received BPM:', data);
-      // Handle the BPM data as needed, for example, update your React Native state
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'BPM', data: { bpm: data } }));
-    } else {
-      console.warn('Received unexpected data type:', typeof data);
-    }
-  };
-
-  document.addEventListener("message", function(event) {
-    var dataPayload;
-    try {
-      dataPayload = JSON.parse(event.nativeEvent.data);
-    } catch (e) { }
-    if (dataPayload && dataPayload.type === 'BPM') {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'BPM', data: { bpm: dataPayload.data.bpm } }));
-    }
-  });
-`;
-
-
-
+  var data;
+  var bpmData;
   const onMessage = (event) => {
-    console.log('Received message:', event.nativeEvent.data); // Log the raw data
-
     try {
-      const dataPayload = JSON.parse(event.nativeEvent.data);
-      console.log('Parsed data:', dataPayload); // Log the parsed data
-
-      if (dataPayload.type === 'Console') {
-        console.info(`[Console] ${JSON.stringify(dataPayload.data)}`);
-      } else if (dataPayload.type === 'BPM') {
-        setBPM(dataPayload.data.bpm);
-      } else {
-        console.log('Unhandled data payload:', dataPayload);
-      }
-    } catch (e) {
-      console.error('Error parsing data:', e);
+      data = JSON.parse(event.nativeEvent.data);
+      console.log(JSON.parse(event.nativeEvent.data));
+  
+      // Accessing BPM data
+      bpmData = data.data.bpm;
+      console.log('BPM data:', bpmData);
+      
+      // // Accessing threshold value
+      // const threshold = data.data.threshold;
+      // console.log('Threshold value:', threshold);
+  
+      // Post back the raw data
+      // window.ReactNativeWebView.postMessage(JSON.stringify(data));
+      data = null;
+      bpmData = null;
+    } catch (error) {
+      console.error('Error parsing data:', error);
     }
   };
-
-  const playFunctionInWebView = () => {
-    const injectScript = `
-      (function() {
-        window.analyzeAudio();
-      })();
-      true;
-    `;
-    webViewRef.current.injectJavaScript(injectScript);
-  };
+  
+  
 
   return (
     <View style={styles.container}>
       <StatusBar style="auto" />
       <View style={styles.innerContainer}>
-
-        <Text style={{ color: 'black', fontSize: 18 }}>Calculate BPM: {bpm}</Text>
-        {/* <Button title={isPlaying ? 'Pause' : 'Play'} onPress={() => playFunctionInWebView()} /> */}
-        <Text className="text-center text-lg ">BPM is updated every 5 seconds, can be changed in index.html</Text>
-
+        <Text style={{ color: 'black', fontSize: 18 }}>Stable BPM: {stableBPM}</Text>
+        <Text style={{ color: 'black', fontSize: 18 }}>Calculated BPM: {bpm}</Text>
       </View>
       <WebView
-        className="hidden"
         style={styles.webview}
         source={{ uri: serverUrl }}
         ref={webViewRef}
         javaScriptEnabled={true}
         onMessage={onMessage}
-        injectedJavaScriptBeforeContentLoaded={debugging + jsCode + '; true'}
       />
     </View>
   );
