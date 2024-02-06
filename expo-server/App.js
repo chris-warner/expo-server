@@ -1,144 +1,132 @@
-import { StatusBar } from 'expo-status-bar';
-import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, Button } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Text, View, StyleSheet, Button } from 'react-native';
+import { Audio } from "expo-av";
+import * as FileSystem from 'expo-file-system';
 import StaticServer from '@dr.pogodin/react-native-static-server';
 import RNFS from 'react-native-fs';
 import { WebView } from 'react-native-webview';
-import { Audio } from 'expo-av';
 
 export default function App() {
   const [serverUrl, setServerUrl] = useState("");
-  const [permissionResponse, requestPermission] = Audio.usePermissions();
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [bpm, setBPM] = useState(0);
-
-  const webViewRef = useRef(null);
+  const [lastRecordingURI, setLastRecordingURI] = useState(null);
+  const [currentRecording, setCurrentRecording] = useState(null);
+  const [dataURI, setDataURI] = useState(null); // New state for the data URI
+  let server = null;
+  let path;
 
   useEffect(() => {
-    let server = null;
-    getPermissions();
-
     const startServer = async () => {
-      const path = `${RNFS.MainBundlePath}/build`;
+      // Define the path to the build folder we are bundling in the app
+      path = `${RNFS.MainBundlePath}/build`;
       server = new StaticServer(9090, path, { localOnly: true });
+      // Start the server
       try {
         const url = await server.start();
         setServerUrl(url);
       } catch (error) {
-        console.error("Failed to start server:", error);
+        console.log('Failed to start server:', error);
       }
     };
-
     startServer();
     return () => server?.stop();
   }, []);
 
-  if (!serverUrl) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
-
-  async function getPermissions() {
+  async function startRecording() {
     try {
-      if (permissionResponse.status !== 'granted') {
-        console.log('Requesting permission..');
-        await requestPermission();
+      // Delete previous recording file
+      if (lastRecordingURI) {
+        await FileSystem.deleteAsync(lastRecordingURI);
+        console.log('Previous recording file deleted successfully');
       }
+
+      console.log('Requesting permissions..');
+      await Audio.requestPermissionsAsync();
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
       });
-    } catch {
-      console.log('Failed to get microphone permissions');
+      console.log('Starting recording..');
+      const newRecording = new Audio.Recording(); // Create a new recording object
+      await newRecording.prepareToRecordAsync(
+        Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY
+      );
+      await newRecording.startAsync();
+      console.log('Recording started');
+      return newRecording; // Return the new recording object
+    } catch (err) {
+      console.error('Failed to start recording', err);
+      return null;
     }
   }
 
-  const debugging = `
-    const consoleLog = (type, log) => window.ReactNativeWebView.postMessage(JSON.stringify({'type': 'Console', 'data': {'type': type, 'log': log}}));
-    console = {
-        log: (log) => consoleLog('log', log),
-        debug: (log) => consoleLog('debug', log),
-        info: (log) => consoleLog('info', log),
-        warn: (log) => consoleLog('warn', log),
-        error: (log) => consoleLog('error', log),
-    };
-  `;
-
-  const jsCode = `
-  window.postMessage = function(data) {
-    if (typeof data === 'number') {
-      console.log('Received BPM:', data);
-      // Handle the BPM data as needed, for example, update your React Native state
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'BPM', data: { bpm: data } }));
-    } else {
-      console.warn('Received unexpected data type:', typeof data);
-    }
-  };
-
-  document.addEventListener("message", function(event) {
-    var dataPayload;
+  async function stopRecording(recording) {
     try {
-      dataPayload = JSON.parse(event.nativeEvent.data);
-    } catch (e) { }
-    if (dataPayload && dataPayload.type === 'BPM') {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'BPM', data: { bpm: dataPayload.data.bpm } }));
+      console.log('Stopping recording..');
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      console.log('Recording stopped and stored at', uri);
+      setLastRecordingURI(uri); // Store the URI of the last recorded sample
+    } catch (err) {
+      console.error('Failed to stop recording', err);
     }
-  });
-`;
+  }
 
-
-
-  const onMessage = (event) => {
-    console.log('Received message:', event.nativeEvent.data); // Log the raw data
-
-    try {
-      const dataPayload = JSON.parse(event.nativeEvent.data);
-      console.log('Parsed data:', dataPayload); // Log the parsed data
-
-      if (dataPayload.type === 'Console') {
-        console.info(`[Console] ${JSON.stringify(dataPayload.data)}`);
-      } else if (dataPayload.type === 'BPM') {
-        setBPM(dataPayload.data.bpm);
-      } else {
-        console.log('Unhandled data payload:', dataPayload);
+  useEffect(() => {
+    const intervalId = setInterval(async () => {
+      if (currentRecording) {
+        await stopRecording(currentRecording);
       }
-    } catch (e) {
-      console.error('Error parsing data:', e);
-    }
-  };
+      const newRecording = await startRecording();
+      setCurrentRecording(newRecording);
+    }, 5000);
 
-  const playFunctionInWebView = () => {
-    const injectScript = `
-      (function() {
-        window.analyzeAudio();
-      })();
-      true;
-    `;
-    webViewRef.current.injectJavaScript(injectScript);
-  };
+    return () => clearInterval(intervalId);
+  }, [currentRecording]);
+
+  // Fetch the data URI when lastRecordingURI changes
+  useEffect(() => {
+    const fetchDataURI = async () => {
+      if (lastRecordingURI) {
+        const base64Data = await FileSystem.readAsStringAsync(lastRecordingURI, { encoding: FileSystem.EncodingType.Base64 });
+        const dataURI = `data:audio/mpeg;base64,${base64Data}`;
+        setDataURI(dataURI);
+      }
+    };
+    fetchDataURI();
+  }, [lastRecordingURI]);
 
   return (
     <View style={styles.container}>
-      <StatusBar style="auto" />
-      <View style={styles.innerContainer}>
-
-        <Text style={{ color: 'black', fontSize: 18 }}>Calculate BPM: {bpm}</Text>
-        {/* <Button title={isPlaying ? 'Pause' : 'Play'} onPress={() => playFunctionInWebView()} /> */}
-        <Text className="text-center text-lg ">BPM is updated every 5 seconds, can be changed in index.html</Text>
-
-      </View>
-      <WebView
-        className="hidden"
-        style={styles.webview}
-        source={{ uri: serverUrl }}
-        ref={webViewRef}
-        javaScriptEnabled={true}
-        onMessage={onMessage}
-        injectedJavaScriptBeforeContentLoaded={debugging + jsCode + '; true'}
+      <Text>Last recorded sample URI: {lastRecordingURI}</Text>
+      <Text>Recording every 5 seconds...</Text>
+      <Button
+        title="Stop Recording"
+        onPress={() => stopRecording(currentRecording)}
+        disabled={!currentRecording}
       />
+      <View style={styles.webViewContainer}>
+        {dataURI && (
+          <WebView
+            source={{
+              html: `
+                <!DOCTYPE html>
+                <html>
+                  <head>
+                    <title>Audio Player</title>
+                  </head>
+                  <body><p>${lastRecordingURI}</p>
+                    <audio controls>
+                      <source src="${dataURI}" type="audio/mpeg">
+                      Your browser does not support the audio element.
+                    </audio>
+                  </body>
+                </html>
+              `,
+            }}
+            style={styles.webView}
+          />
+        )}
+      </View>
     </View>
   );
 }
@@ -146,14 +134,20 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  innerContainer: {
-    flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    margin: 20,
+    alignItems: 'center',
+    backgroundColor: '#ecf0f1',
+    padding: 10,
   },
-  webview: {
+  webViewContainer: {
+    position: 'absolute',
+    top: 100, // Adjust this value as needed
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 100
+  },
+  webView: {
     flex: 1,
   },
 });
