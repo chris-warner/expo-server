@@ -1,91 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Beat Detector Example</title>
+  <title>Audio Player</title>
 </head>
-
 <body>
-  <!-- Your HTML content goes here -->
-  <br />
-  <br />
-  <br />
-  <button id="playButton">Play</button>
-
-  <script type="module">
-    import BeatBeat from "./beat-beat.js";
-    window.analyzeAudio = analyzeAudio;
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    let sound;
-    let beatTimestamps = [];
-
-    async function analyzeAudio() {
-            let bpmTimerId;
-
-      const startBPMCalculationTimer = () => {
-    // Clear existing timer, if any
-    if (bpmTimerId) {
-      clearTimeout(bpmTimerId);
-    }
-
-    // Set a timer to calculate BPM every 5 seconds
-    bpmTimerId = setTimeout(() => {
-      calculateBPM();
-      // Start the timer again after 5 seconds
-      startBPMCalculationTimer();
-    }, 5000);
-  };
-
-  // Set an initial timer
-  startBPMCalculationTimer();
-      if (!sound) {
-        sound = new BeatBeat(audioContext, "./sample.mp3");
-        await sound.load();
-
-        // Check and resume the AudioContext if needed
-        if (audioContext.state === "suspended") {
-          await audioContext.resume();
-        }
-
-        sound.play(() => {
-          const now = audioContext.currentTime;
-          beatTimestamps.push(now);
-          // console.log("Beat detected. Timestamp: " + now);
-        });
-      } else {
-        // If sound is already initialized, simply play it again
-        sound.play();
-      }
-    }
-
-    function calculateBPM() {
-      // Calculate BPM based on the time intervals between beats
-      const now = audioContext.currentTime;
-      const recentBeats = beatTimestamps.filter(timestamp => now - timestamp <= 5);
-      const beatCount = recentBeats.length;
-
-      if (beatCount >= 2) {
-        const totalTime = recentBeats[beatCount - 1] - recentBeats[0];
-        const averageInterval = totalTime / (beatCount - 1);
-        const bpm = 60 / averageInterval;
-
-        // Round BPM to a three-digit integer
-        const roundedBPM = Math.round(bpm);
-
-        // console.log(`BPM calculated over the last 5 seconds: ${roundedBPM}`);
-        window.postMessage(roundedBPM);
-      }
-    }
-
-
-    document.addEventListener("DOMContentLoaded", () => {
-      // Start analyzing audio when the DOM is loaded
-      analyzeAudio();
-    });
-
-  </script>
+  <p id="recordingURI">Recording URI will be displayed here</p>
 </body>
-
 </html>

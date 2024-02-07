@@ -78,7 +78,7 @@ export default function App() {
       }
       const newRecording = await startRecording();
       setCurrentRecording(newRecording);
-    }, 5000);
+    }, 10000);
 
     return () => clearInterval(intervalId);
   }, [currentRecording]);

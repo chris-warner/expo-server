@@ -11,9 +11,6 @@
   "dependencies": {
     "@dr.pogodin/react-native-static-server": "^0.6.0-alpha.8",
     "@expo/metro-runtime": "~3.1.1",
-    "@gluestack-style/react": "^1.0.45",
-    "@gluestack-ui/config": "^1.1.2",
-    "@gluestack-ui/themed": "^1.1.3",
     "expo": "~50.0.5",
     "expo-av": "~13.10.4",
     "expo-status-bar": "~1.11.1",
