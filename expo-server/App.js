@@ -5,7 +5,7 @@ import BPMDetector from "./components/BPMDetector";
 
 export default function App() {
   // State to hold the BPM value received from BPMDetector
-  const [bpmValue, setBpmValue] = useState(0);
+  const [bpmValue, setBpmValue] = useState(128);
 
   // Callback function to receive the updated BPM value from BPMDetector
   const handleBPMChange = (bpm) => {
