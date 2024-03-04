@@ -1,12 +1,11 @@
 {
   "name": "expo-server",
   "version": "1.0.0",
-  "main": "node_modules/expo/AppEntry.js",
   "scripts": {
-    "start": "expo start",
+    "start": "expo start --dev-client",
     "android": "expo run:android",
-    "ios": "expo run:ios",
-    "web": "expo start --web"
+    "ios": "cd ./build && npm run build && cd ../ && expo run:ios",
+    "prebuild": "cd ./build && npm run build && cd ../ && expo prebuild"
   },
   "dependencies": {
     "@dr.pogodin/react-native-static-server": "^0.6.0-alpha.8",
@@ -16,16 +15,16 @@
     "@gluestack-ui/themed": "^1.1.3",
     "expo": "~50.0.5",
     "expo-av": "~13.10.4",
+    "expo-file-system": "~16.0.6",
     "expo-status-bar": "~1.11.1",
     "nativewind": "^2.0.11",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-native": "0.73.2",
+    "react-native": "0.73.4",
     "react-native-fs": "^2.20.0",
     "react-native-svg": "^13.4.0",
     "react-native-web": "~0.19.6",
-    "react-native-webview": "^13.7.0",
-    "expo-file-system": "~16.0.6"
+    "react-native-webview": "^13.7.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
