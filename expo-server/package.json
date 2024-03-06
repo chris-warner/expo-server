@@ -5,7 +5,8 @@
     "start": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "cd ./build && npm run build && cd ../ && expo run:ios",
-    "prebuild": "cd ./build && npm run build && cd ../ && expo prebuild"
+    "prebuild": "cd ./build && npm run build && cd ../ && expo prebuild && node copy-assets.js",
+    "copy-assets":"node copy-assets.js"
   },
   "dependencies": {
     "@dr.pogodin/react-native-static-server": "^0.6.0-alpha.8",
